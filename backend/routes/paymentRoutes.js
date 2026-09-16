@@ -3,7 +3,7 @@ const express = require("express");
 const {
   addPayment,
   getPaymentsByChallan,
-} = require("../controller/paymentController.js");
+} = require("../controller/paymentController");
 const { protect } = require("../middleware/authMiddleware");
 
 const router = express.Router();
