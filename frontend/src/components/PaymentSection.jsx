@@ -14,7 +14,7 @@ const PaymentSection = ({ challan, onPaymentAdded }) => {
   const fetchPayments = async () => {
     try {
       const response = await fetch(
-        `http://localhost:5001/api/payments/challan/${challan._id}`,
+        `${import.meta.env.VITE_API_URL}/api/payments/challan/${challan._id}`,
       );
 
       const data = await response.json();
@@ -51,7 +51,7 @@ const PaymentSection = ({ challan, onPaymentAdded }) => {
     }
 
     try {
-      const response = await fetch("http://localhost:5001/api/payments", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/payments`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -19,7 +19,7 @@ const EditChallan = () => {
     const fetchChallan = async () => {
         try {
             const response = await fetch(
-                `http://localhost:5001/api/challans/${id}`
+                `${import.meta.env.VITE_API_URL}/api/challans/${id}`
             );
 
             const data = await response.json();
@@ -101,7 +101,7 @@ const EditChallan = () => {
             setSaving(true);
 
             const response = await fetch(
-                `http://localhost:5001/api/challans/${id}`,
+                `${import.meta.env.VITE_API_URL}/api/challans/${id}`,
                 {
                     method: "PUT",
                     headers: {

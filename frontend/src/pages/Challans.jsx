@@ -116,7 +116,7 @@ Thank you.`;
 
     try {
       const response = await fetch(
-        `http://localhost:5001/api/payments`,
+        `${import.meta.env.VITE_API_URL}/api/payments`,
         {
           method: "POST",
           headers: {
