@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import { API_URL, getAuthHeaders } from "../api";
 
 const AddChallan = () => {
   const navigate = useNavigate();
   const [parties, setParties] = useState([]);
+  const [selectedParty, setSelectedParty] = useState(null);
   const [searchParty, setSearchParty] = useState("");
   const [showParties, setShowParties] = useState(false);
-  const [selectedParty, setSelectedParty] = useState(null);
 
   const [formData, setFormData] = useState({
     challanNo: "",
@@ -20,9 +21,14 @@ const AddChallan = () => {
   useEffect(() => {
     const fetchParties = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/parties`);
-        const data = await response.json();
-        setParties(data);
+        const response = await fetch(`${API_URL}/api/parties`, {
+          headers: getAuthHeaders(),
+        });
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const data = await response.json();
+          setParties(Array.isArray(data) ? data : []);
+        }
       } catch (error) {
         console.log("Error:", error);
       }
@@ -71,16 +77,16 @@ const AddChallan = () => {
     e.preventDefault();
 
     if (!selectedParty) {
-      alert("Please select a party");
+      alert("Please select a valid party created under your account");
       return;
     }
 
     try {
-      const response = fetch(`${import.meta.env.VITE_API_URL}/api/challans`, {
+      const response = await fetch(`${API_URL}/api/challans`, {
         method: "POST",
-        headers: {
+        headers: getAuthHeaders({
           "Content-Type": "application/json",
-        },
+        }),
         body: JSON.stringify(formData),
       });
 
@@ -99,7 +105,7 @@ const AddChallan = () => {
         setSearchParty("");
         navigate("/challans");
       } else {
-        alert(data.message);
+        alert(data.message || "Failed to add challan");
       }
     } catch (error) {
       console.log("Error:", error);
@@ -121,6 +127,18 @@ const AddChallan = () => {
           <i className="bi bi-arrow-left me-1"></i> Back to Challans
         </button>
       </div>
+
+      {parties.length === 0 && (
+        <div className="alert alert-warning d-flex flex-column flex-sm-row justify-content-between align-items-sm-center mb-4 border-0 shadow-sm p-3">
+          <div className="mb-2 mb-sm-0">
+            <i className="bi bi-exclamation-triangle-fill me-2 text-warning fs-5"></i>
+            <span>No Parties Found: Please create a Party profile first before adding a challan.</span>
+          </div>
+          <Link to="/parties" className="btn btn-sm btn-primary text-nowrap">
+            <i className="bi bi-person-plus me-1"></i> Create Party
+          </Link>
+        </div>
+      )}
 
       <div className="card shadow-sm border-0">
         <div className="card-body p-4">

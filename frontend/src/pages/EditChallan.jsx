@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { API_URL, getAuthHeaders } from "../api";
 
 const EditChallan = () => {
     const { id } = useParams();
@@ -19,7 +20,10 @@ const EditChallan = () => {
     const fetchChallan = async () => {
         try {
             const response = await fetch(
-                `${import.meta.env.VITE_API_URL}/api/challans/${id}`
+                `${API_URL}/api/challans/${id}`,
+                {
+                    headers: getAuthHeaders(),
+                }
             );
 
             const data = await response.json();
@@ -101,12 +105,12 @@ const EditChallan = () => {
             setSaving(true);
 
             const response = await fetch(
-                `${import.meta.env.VITE_API_URL}/api/challans/${id}`,
+                `${API_URL}/api/challans/${id}`,
                 {
                     method: "PUT",
-                    headers: {
+                    headers: getAuthHeaders({
                         "Content-Type": "application/json"
-                    },
+                    }),
                     body: JSON.stringify({
                         challanNo: formData.challanNo,
                         challanDate: formData.challanDate,

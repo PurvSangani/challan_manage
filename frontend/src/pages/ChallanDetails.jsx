@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { API_URL, getAuthHeaders } from "../api";
 
 import PaymentSection from "../components/PaymentSection";
 
@@ -10,11 +11,14 @@ const ChallanDetails = () => {
 
   const fetchChallan = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/challans/${id}`);
-
-      const data = await response.json();
-
-      setChallan(data);
+      const response = await fetch(`${API_URL}/api/challans/${id}`, {
+        headers: getAuthHeaders(),
+      });
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const data = await response.json();
+        setChallan(data);
+      }
     } catch (error) {
       console.log("Error:", error);
     }

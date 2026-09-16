@@ -1,24 +1,7 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+PORT=5001
+MONGO_URI=mongodb+srv://purvsangani89_db_user:TaHQ3pM6ClONMsXq@cluster0.nlq770z.mongodb.net/
 
-node_modules
-dist
-dist-ssr
-*.local
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+
+# VITE_API_URL=https://challan-manage.onrender.com
+VITE_API_URL=http://localhost:5001

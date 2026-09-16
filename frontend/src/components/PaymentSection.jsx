@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { API_URL, getAuthHeaders } from "../api";
 
 const PaymentSection = ({ challan, onPaymentAdded }) => {
   const [payments, setPayments] = useState([]);
@@ -14,7 +15,10 @@ const PaymentSection = ({ challan, onPaymentAdded }) => {
   const fetchPayments = async () => {
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/payments/challan/${challan._id}`,
+        `${API_URL}/api/payments/challan/${challan._id}`,
+        {
+          headers: getAuthHeaders(),
+        }
       );
 
       const data = await response.json();
@@ -51,11 +55,11 @@ const PaymentSection = ({ challan, onPaymentAdded }) => {
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/payments`, {
+      const response = await fetch(`${API_URL}/api/payments`, {
         method: "POST",
-        headers: {
+        headers: getAuthHeaders({
           "Content-Type": "application/json",
-        },
+        }),
         body: JSON.stringify({
           challan: challan._id,
           amount: paymentAmount,

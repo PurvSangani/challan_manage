@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { API_URL, getAuthHeaders } from "../api";
 
 const Challans = () => {
   const [challans, setChallans] = useState([]);
@@ -10,9 +11,14 @@ const Challans = () => {
   // Get challans
   const fetchChallans = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/challans`);
-      const data = await response.json();
-      setChallans(data);
+      const response = await fetch(`${API_URL}/api/challans`, {
+        headers: getAuthHeaders(),
+      });
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const data = await response.json();
+        setChallans(Array.isArray(data) ? data : []);
+      }
     } catch (error) {
       console.log("Error:", error);
     }
@@ -116,12 +122,12 @@ Thank you.`;
 
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/payments`,
+        `${API_URL}/api/payments`,
         {
           method: "POST",
-          headers: {
+          headers: getAuthHeaders({
             "Content-Type": "application/json",
-          },
+          }),
           body: JSON.stringify({
             challan: challan._id,
             amount: remaining,

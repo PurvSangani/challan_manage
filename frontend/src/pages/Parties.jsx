@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { API_URL, getAuthHeaders } from "../api";
 
 const Parties = () => {
   const [parties, setParties] = useState([]);
@@ -12,14 +13,26 @@ const Parties = () => {
     paymentDays: 30,
   });
 
+  const [editingParty, setEditingParty] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    name: "",
+    whatsapp: "",
+    paymentDays: 30,
+  });
+
   const navigate = useNavigate();
 
   // Get all parties
   const fetchParties = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/parties`);
-      const data = await response.json();
-      setParties(data);
+      const response = await fetch(`${API_URL}/api/parties`, {
+        headers: getAuthHeaders(),
+      });
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const data = await response.json();
+        setParties(Array.isArray(data) ? data : []);
+      }
     } catch (error) {
       console.log("Error:", error);
     }
@@ -29,7 +42,7 @@ const Parties = () => {
     fetchParties();
   }, []);
 
-  // Handle form input
+  // Handle form input for creating party
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({
@@ -43,18 +56,19 @@ const Parties = () => {
     e.preventDefault();
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/parties`, {
+      const response = await fetch(`${API_URL}/api/parties`, {
         method: "POST",
-        headers: {
+        headers: getAuthHeaders({
           "Content-Type": "application/json",
-        },
+        }),
         body: JSON.stringify({
           ...formData,
           paymentDays: Number(formData.paymentDays),
         }),
       });
 
-      const data = await response.json();
+      const contentType = response.headers.get("content-type");
+      const data = contentType && contentType.includes("application/json") ? await response.json() : {};
 
       if (response.ok) {
         alert("Party added successfully!");
@@ -66,7 +80,91 @@ const Parties = () => {
         setShowForm(false);
         fetchParties();
       } else {
-        alert(data.message);
+        alert(data.message || "Failed to add party");
+      }
+    } catch (error) {
+      console.log("Error:", error);
+      alert("Something went wrong");
+    }
+  };
+
+  // Start editing a party
+  const handleStartEdit = (party) => {
+    setEditingParty(party);
+    setEditFormData({
+      name: party.name,
+      whatsapp: party.whatsapp,
+      paymentDays: party.paymentDays,
+    });
+    setShowForm(false);
+  };
+
+  // Handle edit form input
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+    setEditFormData({
+      ...editFormData,
+      [name]: value,
+    });
+  };
+
+  // Update party submit
+  const handleUpdateSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      const response = await fetch(`${API_URL}/api/parties/${editingParty._id}`, {
+        method: "PUT",
+        headers: getAuthHeaders({
+          "Content-Type": "application/json",
+        }),
+        body: JSON.stringify({
+          ...editFormData,
+          paymentDays: Number(editFormData.paymentDays),
+        }),
+      });
+
+      const contentType = response.headers.get("content-type");
+      const data = contentType && contentType.includes("application/json") ? await response.json() : {};
+
+      if (response.ok) {
+        alert("Party updated successfully!");
+        setEditingParty(null);
+        fetchParties();
+      } else {
+        alert(data.message || "Failed to update party");
+      }
+    } catch (error) {
+      console.log("Error:", error);
+      alert("Something went wrong");
+    }
+  };
+
+  // Delete party
+  const handleDeleteParty = async (party) => {
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete party "${party.name}"?\n\nWARNING: All associated challans and payment records for this party will also be permanently deleted!`
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      const response = await fetch(`${API_URL}/api/parties/${party._id}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      });
+
+      const contentType = response.headers.get("content-type");
+      const data = contentType && contentType.includes("application/json") ? await response.json() : {};
+
+      if (response.ok) {
+        alert("Party deleted successfully!");
+        if (editingParty && editingParty._id === party._id) {
+          setEditingParty(null);
+        }
+        fetchParties();
+      } else {
+        alert(data.message || "Failed to delete party");
       }
     } catch (error) {
       console.log("Error:", error);
@@ -93,7 +191,10 @@ const Parties = () => {
         </div>
         <button
           className="btn btn-primary mt-3 mt-md-0"
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => {
+            setShowForm(!showForm);
+            if (!showForm) setEditingParty(null);
+          }}
         >
           <i className={`bi ${showForm ? "bi-dash-lg" : "bi-plus-lg"} me-1`}></i>
           {showForm ? "Close Form" : "Add Party"}
@@ -102,10 +203,10 @@ const Parties = () => {
 
       {/* Add Party Form Card */}
       {showForm && (
-        <div className="card shadow-sm border-0 mb-4">
+        <div className="card shadow-sm border-0 mb-4 border-start border-4 border-primary">
           <div className="card-header bg-white border-bottom py-3">
             <h5 className="card-title fw-semibold mb-0 text-dark">
-              <i className="bi bi-person-plus me-2"></i>Create New Party
+              <i className="bi bi-person-plus me-2 text-primary"></i>Create New Party
             </h5>
           </div>
           <div className="card-body p-4">
@@ -168,6 +269,73 @@ const Parties = () => {
         </div>
       )}
 
+      {/* Edit Party Form Card */}
+      {editingParty && (
+        <div className="card shadow-sm border-0 mb-4 border-start border-4 border-warning">
+          <div className="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+            <h5 className="card-title fw-semibold mb-0 text-dark">
+              <i className="bi bi-pencil-square me-2 text-warning"></i>Edit Party: {editingParty.name}
+            </h5>
+            <button className="btn-close" onClick={() => setEditingParty(null)}></button>
+          </div>
+          <div className="card-body p-4">
+            <form onSubmit={handleUpdateSubmit}>
+              <div className="row g-3">
+                <div className="col-12 col-md-5">
+                  <label className="form-label fw-semibold text-dark">Party Name</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    name="name"
+                    value={editFormData.name}
+                    onChange={handleEditChange}
+                    required
+                  />
+                </div>
+
+                <div className="col-12 col-md-4">
+                  <label className="form-label fw-semibold text-dark">WhatsApp Number</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    name="whatsapp"
+                    value={editFormData.whatsapp}
+                    onChange={handleEditChange}
+                    required
+                  />
+                </div>
+
+                <div className="col-12 col-md-3">
+                  <label className="form-label fw-semibold text-dark">Credit Payment Days</label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    name="paymentDays"
+                    value={editFormData.paymentDays}
+                    onChange={handleEditChange}
+                    min="1"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="d-flex justify-content-end gap-2 mt-4">
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary"
+                  onClick={() => setEditingParty(null)}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-warning px-4 text-white">
+                  <i className="bi bi-check-circle me-1"></i> Update Party
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Search Input */}
       <div className="card shadow-sm border-0 mb-4">
         <div className="card-body p-3">
@@ -193,6 +361,7 @@ const Parties = () => {
             <div
               className="party-card h-100 p-3 d-flex flex-column justify-content-between"
               onClick={() => navigate(`/parties/${party._id}`)}
+              style={{ cursor: "pointer" }}
             >
               <div>
                 <div className="d-flex justify-content-between align-items-start mb-2">
@@ -207,7 +376,28 @@ const Parties = () => {
                 </div>
               </div>
               <div className="pt-2 border-top d-flex justify-content-between align-items-center">
-                <span className="text-muted small">Click to view details</span>
+                <div className="d-flex gap-2">
+                  <button
+                    className="btn btn-sm btn-outline-primary py-1 px-2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleStartEdit(party);
+                    }}
+                    title="Edit Party"
+                  >
+                    <i className="bi bi-pencil me-1"></i>Edit
+                  </button>
+                  <button
+                    className="btn btn-sm btn-outline-danger py-1 px-2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteParty(party);
+                    }}
+                    title="Delete Party"
+                  >
+                    <i className="bi bi-trash me-1"></i>Delete
+                  </button>
+                </div>
                 <i className="bi bi-arrow-right text-dark"></i>
               </div>
             </div>
