@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 
 const PartyDetails = () => {
   const { id } = useParams();
@@ -29,7 +29,12 @@ const PartyDetails = () => {
   };
 
   if (!party) {
-    return <p>Loading...</p>;
+    return (
+      <div className="container py-5 text-center text-muted">
+        <div className="spinner-border text-dark mb-2" role="status"></div>
+        <p>Loading party details...</p>
+      </div>
+    );
   }
 
   // Total amount
@@ -62,88 +67,143 @@ const PartyDetails = () => {
     return dueDate < today;
   };
 
+  const getStatusBadge = (status) => {
+    if (status === "Paid") return <span className="badge badge-status-paid">Paid</span>;
+    if (status === "Partial") return <span className="badge badge-status-partial">Partial</span>;
+    return <span className="badge badge-status-pending">Pending</span>;
+  };
+
   return (
-    <div style={{ padding: "30px" }}>
-      <h1>Party Details</h1>
+    <div className="container">
+      {/* Back Button & Header */}
+      <div className="mb-4">
+        <Link to="/parties" className="btn btn-outline-secondary btn-sm mb-3">
+          <i className="bi bi-arrow-left me-1"></i> Back to Parties
+        </Link>
+        <div className="card shadow-sm border-0 p-4 bg-white">
+          <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+            <div>
+              <h2 className="fw-bold mb-1 text-dark">{party.name}</h2>
+              <div className="d-flex flex-wrap gap-3 text-muted small mt-2">
+                <span>
+                  <i className="bi bi-whatsapp text-success me-1"></i>
+                  {party.whatsapp}
+                </span>
+                <span>
+                  <i className="bi bi-calendar-check me-1"></i>
+                  {party.paymentDays} Days Credit Term
+                </span>
+              </div>
+            </div>
+            <div className="mt-3 mt-md-0">
+              <Link to="/add-challan" className="btn btn-primary btn-sm">
+                <i className="bi bi-plus-lg me-1"></i> Create Challan for Party
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      <hr />
+      {/* Summary Cards */}
+      <div className="row g-3 mb-4">
+        <div className="col-12 col-sm-6 col-lg-3">
+          <div className="card shadow-sm border-0 p-3 h-100">
+            <span className="text-muted small text-uppercase fw-semibold">Total Challans</span>
+            <h3 className="fw-bold mb-0 mt-1">{challans.length}</h3>
+          </div>
+        </div>
+        <div className="col-12 col-sm-6 col-lg-3">
+          <div className="card shadow-sm border-0 p-3 h-100">
+            <span className="text-muted small text-uppercase fw-semibold">Total Amount</span>
+            <h3 className="fw-bold mb-0 mt-1">₹{totalAmount.toLocaleString("en-IN")}</h3>
+          </div>
+        </div>
+        <div className="col-12 col-sm-6 col-lg-3">
+          <div className="card shadow-sm border-0 p-3 h-100">
+            <span className="text-muted small text-uppercase fw-semibold">Total Paid</span>
+            <h3 className="fw-bold mb-0 mt-1 text-success">₹{totalPaid.toLocaleString("en-IN")}</h3>
+          </div>
+        </div>
+        <div className="col-12 col-sm-6 col-lg-3">
+          <div className="card shadow-sm border-0 p-3 h-100">
+            <span className="text-muted small text-uppercase fw-semibold">Total Remaining</span>
+            <h3 className="fw-bold mb-0 mt-1 text-dark">₹{totalRemaining.toLocaleString("en-IN")}</h3>
+          </div>
+        </div>
+      </div>
 
-      <h2>{party.name}</h2>
+      {/* Challans Table */}
+      <div className="card shadow-sm border-0">
+        <div className="card-header bg-white border-bottom py-3">
+          <h5 className="card-title fw-semibold mb-0 text-dark">
+            <i className="bi bi-file-earmark-text me-2"></i>Party Challans ({challans.length})
+          </h5>
+        </div>
+        <div className="card-body p-0">
+          {challans.length === 0 ? (
+            <div className="p-4 text-center text-muted">
+              <i className="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
+              No challans found for this party.
+            </div>
+          ) : (
+            <div className="table-responsive">
+              <table className="table table-hover align-middle mb-0">
+                <thead className="table-light">
+                  <tr>
+                    <th>Challan No</th>
+                    <th>Challan Date</th>
+                    <th>Amount</th>
+                    <th>Paid</th>
+                    <th>Remaining</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                    <th>Overdue</th>
+                    <th className="text-end">Action</th>
+                  </tr>
+                </thead>
 
-      <p>
-        <strong>WhatsApp:</strong> {party.whatsapp}
-      </p>
+                <tbody>
+                  {challans.map((challan) => {
+                    const remaining = Math.max(
+                      0,
+                      Number(challan.amount || 0) - Number(challan.paidAmount || 0),
+                    );
 
-      <p>
-        <strong>Payment Days:</strong> {party.paymentDays} days
-      </p>
+                    const overdue = isOverdue(challan);
 
-      <hr />
-
-      <h2>Payment Summary</h2>
-
-      <p>
-        <strong>Total Challans:</strong> {challans.length}
-      </p>
-
-      <p>
-        <strong>Total Amount:</strong> ₹{totalAmount}
-      </p>
-
-      <p>
-        <strong>Total Paid:</strong> ₹{totalPaid}
-      </p>
-
-      <p>
-        <strong>Total Remaining:</strong> ₹{totalRemaining}
-      </p>
-
-      <hr />
-
-      <h2>Party Challans</h2>
-
-      {challans.length === 0 ? (
-        <p>No challans found for this party.</p>
-      ) : (
-        <table border="1" cellPadding="10">
-          <thead>
-            <tr>
-              <th>Challan No</th>
-              <th>Challan Date</th>
-              <th>Amount</th>
-              <th>Paid</th>
-              <th>Remaining</th>
-              <th>Due Date</th>
-              <th>Status</th>
-              <th>Overdue</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {challans.map((challan) => {
-              const remaining = Math.max(
-                0,
-                Number(challan.amount || 0) - Number(challan.paidAmount || 0),
-              );
-
-              const overdue = isOverdue(challan);
-
-              return (
-                <tr key={challan._id}>
-                  <td>{challan.challanNo}</td>
-                  <td>{formatDate(challan.challanDate)}</td>
-                  <td>₹{challan.amount}</td>
-                  <td>₹{challan.paidAmount || 0}</td>
-                  <td>₹{remaining}</td>
-                  <td>{formatDate(challan.dueDate)}</td>
-                  <td>{challan.status}</td>
-                  <td>{overdue ? "Yes" : "No"}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      )}
+                    return (
+                      <tr key={challan._id}>
+                        <td className="fw-semibold">{challan.challanNo}</td>
+                        <td>{formatDate(challan.challanDate)}</td>
+                        <td>₹{challan.amount}</td>
+                        <td className="text-success">₹{challan.paidAmount || 0}</td>
+                        <td className="fw-bold text-dark">₹{remaining}</td>
+                        <td>{formatDate(challan.dueDate)}</td>
+                        <td>{getStatusBadge(challan.status)}</td>
+                        <td>
+                          {overdue ? (
+                            <span className="badge badge-status-overdue">Yes</span>
+                          ) : (
+                            <span className="badge bg-light text-muted border">No</span>
+                          )}
+                        </td>
+                        <td className="text-end">
+                          <Link
+                            to={`/challans/${challan._id}`}
+                            className="btn btn-sm btn-outline-dark"
+                          >
+                            View
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

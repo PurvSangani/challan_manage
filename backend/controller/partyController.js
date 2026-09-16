@@ -5,7 +5,7 @@ const Challan = require("../models/Challan");
 const addParty = async (req, res) => {
   try {
     const { name, whatsapp, paymentDays } = req.body;
-
+    console.log(req.body);
     const existingParty = await Party.findOne({ whatsapp });
 
     if (existingParty) {
@@ -19,7 +19,7 @@ const addParty = async (req, res) => {
       whatsapp,
       paymentDays,
     });
-
+    console.log(party);
     res.status(201).json({
       message: "Party added successfully",
       party,

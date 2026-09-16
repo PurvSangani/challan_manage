@@ -3,7 +3,7 @@ const express = require("express");
 const {
   addPayment,
   getPaymentsByChallan,
-} = require("../controllers/paymentController");
+} = require("../controller/PaymentController.js");
 
 const router = express.Router();
 

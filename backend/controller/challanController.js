@@ -97,26 +97,56 @@ const updateChallan = async (req, res) => {
 
     if (!challan) {
       return res.status(404).json({
-        message: "Challan not found",
+        message: "Challan not found"
       });
     }
 
-    const { challanNo, challanDate, amount, paidAmount } = req.body;
+    const {
+      challanNo,
+      challanDate,
+      amount,
+      paidAmount
+    } = req.body;
 
-    // Use old values if a field is not provided
-    const newAmount = amount !== undefined ? Number(amount) : challan.amount;
+    const newAmount =
+      amount !== undefined
+        ? Number(amount)
+        : challan.amount;
 
     const newPaidAmount =
-      paidAmount !== undefined ? Number(paidAmount) : challan.paidAmount;
+      paidAmount !== undefined
+        ? Number(paidAmount)
+        : challan.paidAmount;
 
-    // Paid amount cannot be greater than amount
     if (newPaidAmount > newAmount) {
       return res.status(400).json({
-        message: "Paid amount cannot be greater than challan amount",
+        message:
+          "Paid amount cannot be greater than challan amount"
       });
     }
 
-    // Calculate status automatically
+    // Get party
+    const selectedParty =
+      await Party.findById(challan.party);
+
+    if (!selectedParty) {
+      return res.status(404).json({
+        message: "Party not found"
+      });
+    }
+
+    // Calculate new due date
+    const newChallanDate =
+      challanDate || challan.challanDate;
+
+    const dueDate = new Date(newChallanDate);
+
+    dueDate.setDate(
+      dueDate.getDate() +
+      Number(selectedParty.paymentDays)
+    );
+
+    // Calculate status
     let paymentStatus = "Pending";
 
     if (newPaidAmount >= newAmount) {
@@ -125,24 +155,37 @@ const updateChallan = async (req, res) => {
       paymentStatus = "Partial";
     }
 
-    challan.challanNo = challanNo || challan.challanNo;
+    challan.challanNo =
+      challanNo || challan.challanNo;
 
-    challan.challanDate = challanDate || challan.challanDate;
+    challan.challanDate =
+      newChallanDate;
 
-    challan.amount = newAmount;
-    challan.paidAmount = newPaidAmount;
-    challan.status = paymentStatus;
+    challan.amount =
+      newAmount;
+
+    challan.paidAmount =
+      newPaidAmount;
+
+    challan.dueDate =
+      dueDate;
+
+    challan.status =
+      paymentStatus;
 
     await challan.save();
 
     res.status(200).json({
       message: "Challan updated successfully",
-      challan,
+      challan
     });
+
   } catch (error) {
+    console.log("UPDATE CHALLAN ERROR:", error);
+
     res.status(500).json({
       message: "Server error",
-      error: error.message,
+      error: error.message
     });
   }
 };

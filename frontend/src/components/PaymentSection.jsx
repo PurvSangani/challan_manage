@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 const PaymentSection = ({ challan, onPaymentAdded }) => {
   const [payments, setPayments] = useState([]);
   const [amount, setAmount] = useState("");
-
   const [paymentDate, setPaymentDate] = useState(
     new Date().toISOString().split("T")[0],
   );
@@ -54,11 +53,9 @@ const PaymentSection = ({ challan, onPaymentAdded }) => {
     try {
       const response = await fetch("http://localhost:5001/api/payments", {
         method: "POST",
-
         headers: {
           "Content-Type": "application/json",
         },
-
         body: JSON.stringify({
           challan: challan._id,
           amount: paymentAmount,
@@ -90,96 +87,129 @@ const PaymentSection = ({ challan, onPaymentAdded }) => {
   };
 
   return (
-    <div style={{ marginTop: "20px" }}>
-      <h2>Payment</h2>
-
-      <p>
-        <strong>Challan Amount:</strong> ₹{challan.amount}
-      </p>
-
-      <p>
-        <strong>Paid:</strong> ₹{challan.paidAmount || 0}
-      </p>
-
-      <p>
-        <strong>Remaining:</strong> ₹{remaining}
-      </p>
-
-      {/* Add Payment Form */}
-
-      {remaining > 0 ? (
-        <form onSubmit={handlePayment}>
-          <div>
-            <label>Payment Amount</label>
-
-            <br />
-
-            <input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              min="1"
-              max={remaining}
-              placeholder="Enter payment"
-              required
-            />
+    <div className="mt-4">
+      {/* Add Payment Card */}
+      <div className="card shadow-sm border-0 mb-4">
+        <div className="card-header bg-white border-bottom py-3">
+          <h5 className="card-title fw-semibold mb-0 text-dark">
+            <i className="bi bi-credit-card me-2"></i>Record New Payment
+          </h5>
+        </div>
+        <div className="card-body p-4">
+          <div className="row g-3 mb-4">
+            <div className="col-12 col-md-4">
+              <div className="p-3 bg-light rounded border text-center">
+                <span className="text-muted small text-uppercase fw-semibold d-block">Challan Amount</span>
+                <span className="fs-5 fw-bold text-dark">₹{challan.amount}</span>
+              </div>
+            </div>
+            <div className="col-12 col-md-4">
+              <div className="p-3 bg-light rounded border text-center">
+                <span className="text-muted small text-uppercase fw-semibold d-block">Total Paid</span>
+                <span className="fs-5 fw-bold text-success">₹{challan.paidAmount || 0}</span>
+              </div>
+            </div>
+            <div className="col-12 col-md-4">
+              <div className="p-3 bg-light rounded border text-center">
+                <span className="text-muted small text-uppercase fw-semibold d-block">Balance Remaining</span>
+                <span className="fs-5 fw-bold text-dark">₹{remaining}</span>
+              </div>
+            </div>
           </div>
 
-          <br />
+          {remaining > 0 ? (
+            <form onSubmit={handlePayment}>
+              <div className="row g-3">
+                <div className="col-12 col-md-6">
+                  <label className="form-label fw-semibold text-dark">Payment Amount (₹)</label>
 
-          <div>
-            <label>Payment Date</label>
+                  {remaining > 0 && (
+                    <button
+                      type="button"
+                      className="btn btn-success btn-sm mt-2"
+                      onClick={() => setAmount(remaining)}
+                    >
+                      Pay Full ₹{remaining}
+                    </button>
+                  )}
 
-            <br />
+                  <input
+                    type="number"
+                    className="form-control"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    min="1"
+                    max={remaining}
+                    placeholder={`Max ₹${remaining}`}
+                    required
+                  />
+                </div>
 
-            <input
-              type="date"
-              value={paymentDate}
-              onChange={(e) => setPaymentDate(e.target.value)}
-              required
-            />
-          </div>
+                <div className="col-12 col-md-6">
+                  <label className="form-label fw-semibold text-dark">Payment Date</label>
+                  <input
+                    type="date"
+                    className="form-control"
+                    value={paymentDate}
+                    onChange={(e) => setPaymentDate(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
 
-          <br />
+              <div className="mt-3 text-end">
+                <button type="submit" className="btn btn-primary px-4 fw-semibold">
+                  <i className="bi bi-check-lg me-1"></i> Submit Payment
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="alert alert-success border-0 bg-success-subtle text-success-emphasis text-center fw-bold mb-0">
+              <i className="bi bi-check-circle-fill me-2"></i> This challan is fully paid.
+            </div>
+          )}
+        </div>
+      </div>
 
-          <button type="submit">Add Payment</button>
-        </form>
-      ) : (
-        <p>
-          <strong>Fully Paid</strong>
-        </p>
-      )}
+      {/* Payment History Card */}
+      <div className="card shadow-sm border-0">
+        <div className="card-header bg-white border-bottom py-3">
+          <h5 className="card-title fw-semibold mb-0 text-dark">
+            <i className="bi bi-clock-history me-2"></i>Payment History
+          </h5>
+        </div>
+        <div className="card-body p-0">
+          {payments.length === 0 ? (
+            <div className="p-4 text-center text-muted">
+              <i className="bi bi-receipt fs-2 d-block mb-2 text-secondary"></i>
+              No payment transactions recorded yet.
+            </div>
+          ) : (
+            <div className="table-responsive">
+              <table className="table table-hover align-middle mb-0">
+                <thead className="table-light">
+                  <tr>
+                    <th>Payment Date</th>
+                    <th>Amount Paid</th>
+                  </tr>
+                </thead>
 
-      <hr />
-
-      {/* Payment History */}
-
-      <h2>Payment History</h2>
-
-      {payments.length === 0 ? (
-        <p>No payments yet.</p>
-      ) : (
-        <table border="1" cellPadding="10">
-          <thead>
-            <tr>
-              <th>Payment Date</th>
-              <th>Amount</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {payments.map((payment) => (
-              <tr key={payment._id}>
-                <td>
-                  {new Date(payment.paymentDate).toLocaleDateString("en-IN")}
-                </td>
-
-                <td>₹{payment.amount}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+                <tbody>
+                  {payments.map((payment) => (
+                    <tr key={payment._id}>
+                      <td>
+                        <i className="bi bi-calendar-event me-2 text-muted"></i>
+                        {new Date(payment.paymentDate).toLocaleDateString("en-IN")}
+                      </td>
+                      <td className="fw-bold text-success">₹{payment.amount}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
