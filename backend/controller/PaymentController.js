@@ -6,8 +6,11 @@ const addPayment = async (req, res) => {
   try {
     const { challan, amount, paymentDate } = req.body;
 
-    // Find challan
-    const selectedChallan = await Challan.findById(challan);
+    // Find challan belonging to user
+    const selectedChallan = await Challan.findOne({
+      _id: challan,
+      user: req.user._id,
+    });
 
     if (!selectedChallan) {
       return res.status(404).json({
@@ -24,7 +27,6 @@ const addPayment = async (req, res) => {
     }
 
     const currentPaid = Number(selectedChallan.paidAmount || 0);
-
     const remaining = Number(selectedChallan.amount) - currentPaid;
 
     // Payment cannot be greater than remaining
@@ -36,6 +38,7 @@ const addPayment = async (req, res) => {
 
     // Create payment history
     const payment = await Payment.create({
+      user: req.user._id,
       challan,
       amount: paymentAmount,
       paymentDate: paymentDate || new Date(),
@@ -43,7 +46,6 @@ const addPayment = async (req, res) => {
 
     // Update challan paid amount
     const newPaidAmount = currentPaid + paymentAmount;
-
     selectedChallan.paidAmount = newPaidAmount;
 
     // Update status
@@ -71,7 +73,20 @@ const addPayment = async (req, res) => {
 // Get payment history
 const getPaymentsByChallan = async (req, res) => {
   try {
+    // Verify challan belongs to user
+    const challan = await Challan.findOne({
+      _id: req.params.challanId,
+      user: req.user._id,
+    });
+
+    if (!challan) {
+      return res.status(404).json({
+        message: "Challan not found",
+      });
+    }
+
     const payments = await Payment.find({
+      user: req.user._id,
       challan: req.params.challanId,
     }).sort({
       paymentDate: -1,

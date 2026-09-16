@@ -2,10 +2,15 @@ const mongoose = require("mongoose");
 
 const challanSchema = new mongoose.Schema(
   {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
     challanNo: {
       type: String,
       required: true,
-      unique: true,
       trim: true,
     },
 
@@ -45,7 +50,10 @@ const challanSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  },
+  }
 );
+
+// Ensure challanNo is unique per user
+challanSchema.index({ user: 1, challanNo: 1 }, { unique: true });
 
 module.exports = mongoose.model("Challan", challanSchema);

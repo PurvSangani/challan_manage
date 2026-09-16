@@ -1,12 +1,16 @@
 const Challan = require("../models/Challan");
 const Party = require("../models/Party");
+const Payment = require("../models/Payment");
 
 const addChallan = async (req, res) => {
   try {
     const { challanNo, party, challanDate, amount, paidAmount } = req.body;
 
-    // Find selected party
-    const selectedParty = await Party.findById(party);
+    // Find selected party belonging to user
+    const selectedParty = await Party.findOne({
+      _id: party,
+      user: req.user._id,
+    });
 
     if (!selectedParty) {
       return res.status(404).json({
@@ -14,14 +18,24 @@ const addChallan = async (req, res) => {
       });
     }
 
+    // Check duplicate challanNo for user
+    const existingChallan = await Challan.findOne({
+      user: req.user._id,
+      challanNo,
+    });
+
+    if (existingChallan) {
+      return res.status(400).json({
+        message: "Challan number already exists",
+      });
+    }
+
     // Calculate due date
     const dueDate = new Date(challanDate);
-
     dueDate.setDate(dueDate.getDate() + Number(selectedParty.paymentDays));
 
     // Calculate payment status
     let paymentStatus = "Pending";
-
     if (Number(paidAmount) >= Number(amount)) {
       paymentStatus = "Paid";
     } else if (Number(paidAmount) > 0) {
@@ -30,6 +44,7 @@ const addChallan = async (req, res) => {
 
     // Create challan
     const newChallan = await Challan.create({
+      user: req.user._id,
       challanNo,
       party,
       challanDate,
@@ -45,7 +60,11 @@ const addChallan = async (req, res) => {
     });
   } catch (error) {
     console.log("ADD CHALLAN ERROR:", error);
-
+    if (error.code === 11000) {
+      return res.status(400).json({
+        message: "Challan number already exists",
+      });
+    }
     res.status(500).json({
       message: "Server error",
       error: error.message,
@@ -55,16 +74,12 @@ const addChallan = async (req, res) => {
 
 const getChallans = async (req, res) => {
   try {
-    const challans = await Challan.find()
+    const challans = await Challan.find({ user: req.user._id })
       .populate("party")
       .sort({ createdAt: -1 });
 
     res.status(200).json(challans);
   } catch (error) {
-    console.log("========== ADD CHALLAN ERROR ==========");
-    console.log(error);
-    console.log("=======================================");
-
     res.status(500).json({
       message: "Server error",
       error: error.message,
@@ -74,7 +89,10 @@ const getChallans = async (req, res) => {
 
 const getChallanById = async (req, res) => {
   try {
-    const challan = await Challan.findById(req.params.id).populate("party");
+    const challan = await Challan.findOne({
+      _id: req.params.id,
+      user: req.user._id,
+    }).populate("party");
 
     if (!challan) {
       return res.status(404).json({
@@ -93,112 +111,94 @@ const getChallanById = async (req, res) => {
 
 const updateChallan = async (req, res) => {
   try {
-    const challan = await Challan.findById(req.params.id);
-
-    if (!challan) {
-      return res.status(404).json({
-        message: "Challan not found"
-      });
-    }
-
-    const {
-      challanNo,
-      challanDate,
-      amount,
-      paidAmount
-    } = req.body;
-
-    const newAmount =
-      amount !== undefined
-        ? Number(amount)
-        : challan.amount;
-
-    const newPaidAmount =
-      paidAmount !== undefined
-        ? Number(paidAmount)
-        : challan.paidAmount;
-
-    if (newPaidAmount > newAmount) {
-      return res.status(400).json({
-        message:
-          "Paid amount cannot be greater than challan amount"
-      });
-    }
-
-    // Get party
-    const selectedParty =
-      await Party.findById(challan.party);
-
-    if (!selectedParty) {
-      return res.status(404).json({
-        message: "Party not found"
-      });
-    }
-
-    // Calculate new due date
-    const newChallanDate =
-      challanDate || challan.challanDate;
-
-    const dueDate = new Date(newChallanDate);
-
-    dueDate.setDate(
-      dueDate.getDate() +
-      Number(selectedParty.paymentDays)
-    );
-
-    // Calculate status
-    let paymentStatus = "Pending";
-
-    if (newPaidAmount >= newAmount) {
-      paymentStatus = "Paid";
-    } else if (newPaidAmount > 0) {
-      paymentStatus = "Partial";
-    }
-
-    challan.challanNo =
-      challanNo || challan.challanNo;
-
-    challan.challanDate =
-      newChallanDate;
-
-    challan.amount =
-      newAmount;
-
-    challan.paidAmount =
-      newPaidAmount;
-
-    challan.dueDate =
-      dueDate;
-
-    challan.status =
-      paymentStatus;
-
-    await challan.save();
-
-    res.status(200).json({
-      message: "Challan updated successfully",
-      challan
+    const challan = await Challan.findOne({
+      _id: req.params.id,
+      user: req.user._id,
     });
-
-  } catch (error) {
-    console.log("UPDATE CHALLAN ERROR:", error);
-
-    res.status(500).json({
-      message: "Server error",
-      error: error.message
-    });
-  }
-};
-
-const deleteChallan = async (req, res) => {
-  try {
-    const challan = await Challan.findByIdAndDelete(req.params.id);
 
     if (!challan) {
       return res.status(404).json({
         message: "Challan not found",
       });
     }
+
+    const { challanNo, challanDate, amount, paidAmount } = req.body;
+
+    const newAmount = amount !== undefined ? Number(amount) : challan.amount;
+    const newPaidAmount =
+      paidAmount !== undefined ? Number(paidAmount) : challan.paidAmount;
+
+    if (newPaidAmount > newAmount) {
+      return res.status(400).json({
+        message: "Paid amount cannot be greater than challan amount",
+      });
+    }
+
+    // Get party
+    const selectedParty = await Party.findOne({
+      _id: challan.party,
+      user: req.user._id,
+    });
+
+    if (!selectedParty) {
+      return res.status(404).json({
+        message: "Party not found",
+      });
+    }
+
+    // Calculate new due date
+    const newChallanDate = challanDate || challan.challanDate;
+    const dueDate = new Date(newChallanDate);
+    dueDate.setDate(dueDate.getDate() + Number(selectedParty.paymentDays));
+
+    // Calculate status
+    let paymentStatus = "Pending";
+    if (newPaidAmount >= newAmount) {
+      paymentStatus = "Paid";
+    } else if (newPaidAmount > 0) {
+      paymentStatus = "Partial";
+    }
+
+    challan.challanNo = challanNo || challan.challanNo;
+    challan.challanDate = newChallanDate;
+    challan.amount = newAmount;
+    challan.paidAmount = newPaidAmount;
+    challan.dueDate = dueDate;
+    challan.status = paymentStatus;
+
+    await challan.save();
+
+    res.status(200).json({
+      message: "Challan updated successfully",
+      challan,
+    });
+  } catch (error) {
+    console.log("UPDATE CHALLAN ERROR:", error);
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+const deleteChallan = async (req, res) => {
+  try {
+    const challan = await Challan.findOneAndDelete({
+      _id: req.params.id,
+      user: req.user._id,
+    });
+
+    if (!challan) {
+      return res.status(404).json({
+        message: "Challan not found",
+      });
+    }
+
+    // Also delete associated payments
+    await Payment.deleteMany({
+      user: req.user._id,
+      challan: req.params.id,
+    });
 
     res.status(200).json({
       message: "Challan deleted successfully",
@@ -210,6 +210,7 @@ const deleteChallan = async (req, res) => {
     });
   }
 };
+
 module.exports = {
   addChallan,
   getChallans,
