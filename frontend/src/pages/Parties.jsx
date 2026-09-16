@@ -17,7 +17,7 @@ const Parties = () => {
   // Get all parties
   const fetchParties = async () => {
     try {
-      const response = await fetch("http://localhost:5001/api/parties");
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/parties`);
       const data = await response.json();
       setParties(data);
     } catch (error) {

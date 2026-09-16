@@ -10,7 +10,7 @@ const ChallanDetails = () => {
 
   const fetchChallan = async () => {
     try {
-      const response = await fetch(`http://localhost:5001/api/challans/${id}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/challans/${id}`);
 
       const data = await response.json();
 

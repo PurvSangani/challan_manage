@@ -9,7 +9,7 @@ const PartyDetails = () => {
 
   const fetchPartyDetails = async () => {
     try {
-      const response = await fetch(`http://localhost:5001/api/parties/${id}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/parties/${id}`);
 
       const data = await response.json();
 

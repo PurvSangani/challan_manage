@@ -76,7 +76,7 @@ const AddChallan = () => {
     }
 
     try {
-      const response = await fetch("http://localhost:5001/api/challans", {
+      const response = fetch(`${import.meta.env.VITE_API_URL}/api/challans`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
