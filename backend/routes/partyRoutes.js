@@ -5,7 +5,7 @@ const {
   getPartyById,
   updateParty,
   deleteParty,
-} = require("../controller/PartyController.js");
+} = require("../controller/partyController.js");
 const { protect } = require("../middleware/authMiddleware");
 
 const router = express.Router();
