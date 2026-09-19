@@ -4,7 +4,7 @@ const rawUrl = import.meta.env.VITE_API_URL;
 export const API_URL = (
   rawUrl && rawUrl !== "undefined" && rawUrl.trim() !== ""
     ? rawUrl.trim()
-    : "http://localhost:5001"
+    : `http://${typeof window !== "undefined" && window.location.hostname ? window.location.hostname : "localhost"}:5001`
 ).replace(/\/$/, "");
 
 // Get Auth Token from localStorage

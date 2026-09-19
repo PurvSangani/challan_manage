@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { API_URL, getAuthHeaders } from "../api";
+import ContactPickerButton from "../components/ContactPickerButton";
 
 const PartyDetails = () => {
   const { id } = useParams();
@@ -204,11 +205,23 @@ const PartyDetails = () => {
         {/* Edit Party Form */}
         {isEditing && (
           <div className="card shadow-sm border-0 mb-4 border-start border-4 border-warning">
-            <div className="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+            <div className="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
               <h5 className="card-title fw-semibold mb-0 text-dark">
                 <i className="bi bi-pencil-square me-2 text-warning"></i>Edit Party: {party.name}
               </h5>
-              <button className="btn-close" onClick={() => setIsEditing(false)}></button>
+              <div className="d-flex align-items-center gap-2">
+                <ContactPickerButton
+                  className="btn btn-outline-warning btn-sm"
+                  onSelectContact={(contact) => {
+                    setEditFormData((prev) => ({
+                      ...prev,
+                      ...(contact.name ? { name: contact.name } : {}),
+                      ...(contact.whatsapp ? { whatsapp: contact.whatsapp } : {}),
+                    }));
+                  }}
+                />
+                <button className="btn-close" onClick={() => setIsEditing(false)}></button>
+              </div>
             </div>
             <div className="card-body p-4">
               <form onSubmit={handleUpdateSubmit}>
